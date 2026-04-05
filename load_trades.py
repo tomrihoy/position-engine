@@ -1,7 +1,8 @@
+import json
 from dataclasses import dataclass
 from enum import StrEnum
-import json
 from pathlib import Path
+
 
 class TradeCommodityType(StrEnum):
     NBP_GAS = 'nbp_gas'
@@ -16,7 +17,7 @@ class TradeAction(StrEnum):
     SELL='sell'
 
 @dataclass(frozen=True, slots=True)
-class Trade():
+class Trade:
     trade_id: str
     book: TradeBook
     commodity: TradeCommodityType
@@ -30,7 +31,7 @@ class Trade():
         if self.action==TradeAction.BUY:
             return self.quantity_mwh
         return -self.quantity_mwh
-    
+
 def trade_from_dict(data: dict) -> Trade:
     return Trade(
         trade_id=str(data["trade_id"]),

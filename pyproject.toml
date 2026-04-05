@@ -17,3 +17,21 @@ dev = [
     "pytest>=9.0.2",
     "ruff>=0.15.9",
 ]
+
+[tool.ruff]
+line-length = 88          # same default as Black
+target-version = "py311"  # match your requires-python
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors — basic style errors (indentation, whitespace, etc.)
+    "W",    # pycodestyle warnings — line length, blank lines, etc.
+    "F",    # pyflakes — undefined names, unused imports, unused variables
+    "B",    # flake8-bugbear — likely bugs and design issues, includes B006
+    "I",    # isort — import ordering and grouping
+    "UP",   # pyupgrade — flags outdated Python syntax (e.g. old-style string formatting)
+    "C4",   # flake8-comprehensions — unnecessary list/dict/set comprehensions
+    "SIM",  # flake8-simplify — suggests simpler code constructs
+    "N",    # pep8-naming — naming conventions (classes, functions, variables)
+]
+
