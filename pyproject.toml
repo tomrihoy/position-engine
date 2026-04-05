@@ -3,16 +3,17 @@ name = "position-engine"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.14"
 dependencies = [
-    "pandas>=2.3.3",
+    "pandas>=3.0.2",
     "rich>=14.3.3",
-    "typer>=0.23.2",
+    "typer>=0.24.1",
 ]
 
 [dependency-groups]
 dev = [
-    "mypy>=1.19.1",
-    "pytest>=8.4.2",
+    "mypy>=1.20.0",
+    "pandas>=3.0.2",
+    "pytest>=9.0.2",
     "ruff>=0.15.9",
 ]
