@@ -20,7 +20,7 @@ dev = [
 
 [tool.ruff]
 line-length = 88          # same default as Black
-target-version = "py311"  # match your requires-python
+target-version = "py314"  # match your requires-python
 
 [tool.ruff.lint]
 select = [

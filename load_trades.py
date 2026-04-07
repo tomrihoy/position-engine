@@ -6,10 +6,10 @@ from pathlib import Path
 
 class TradeCommodityType(StrEnum):
     NBP_GAS = 'nbp_gas'
+    TTF_GAS = 'ttf_gas'
 
 class TradeBook(StrEnum):
     PHYSICAL = 'physical'
-    FINANCIAL = 'financial'
     HEDGE='hedge'
 
 class TradeAction(StrEnum):
@@ -66,3 +66,5 @@ def print_trades(trade_list: list[Trade]):
 if __name__=='__main__':
     trades = load_trades_from_json('trades.json')
     print_trades(trades)
+
+
