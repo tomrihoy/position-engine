@@ -104,9 +104,34 @@ def hedge_coverage(trade_list:list[Trade])->pd.DataFrame:
         )
     return hedge_coverages
     
+def print_position_aggregations(aggregated_trades: list[TradePositionAggregation]):
+    print('\n')
+    header = f"{'Book':<15} {'Commodity':<15} {'Delivery Period':<20} {'Net Position':>15} {'Trade Count':>12} {'Total Cost':>15}"
+    print(header)
+    print('-' * len(header))
+    for t in aggregated_trades:
+        print(f"{t.book:<15} {t.commodity:<15} {t.delivery_period:<20} {t.net_position:>15.2f} {t.trade_count:>12} {t.total_cost:>15.2f}") 
     
+
+def print_delta_exposures(deltas: list[DeltaExposure]):
+    print('\n')
+    header = f"{'Commodity':<15} {'Delivery Period':<20} {'Delta Exposure':>15}"
+    print(header)
+    print('-' * len(header))
+    for d in deltas:
+        print(f"{d.commodity:<15} {d.delivery_period:<20} {d.delta_exposure:>15.2f}")
     
-    return hedge_coverage_df
+
+def print_hedge_coverages(hedge_coverages: list[HedgeCoverage]):
+    print('\n')
+    header = f"{'Commodity':<15} {'Delivery Period':<20} {'Hedge Coverage':>15}"
+    print(header)
+    print('-' * len(header))
+    for h in hedge_coverages:
+        print(f"{h.commodity:<15} {h.delivery_period:<20} {h.hedge_coverage:>15.2f}")
+    
+
+    
 
 
 if __name__ == '__main__':
@@ -114,14 +139,16 @@ if __name__ == '__main__':
     aggregated_trades = position_aggregations(trade_list)
     deltas = delta_exposure(trade_list)
     hedge_coverages = hedge_coverage(trade_list)
+
+    print_delta_exposures(deltas)
+
+    print_hedge_coverages(hedge_coverages)
+
+    print_position_aggregations(aggregated_trades)
     
 
 
 
-    header = f"{'Book':<15} {'Commodity':<15} {'Delivery Period':<20} {'Net Position':>15} {'Trade Count':>12} {'Total Cost':>15}"
-    print(header)
-    print('-' * len(header))
     
-    for t in aggregated_trades:
-        print(f"{t.book:<15} {t.commodity:<15} {t.delivery_period:<20} {t.net_position:>15.2f} {t.trade_count:>12} {t.total_cost:>15.2f}") 
+ 
 
