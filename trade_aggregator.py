@@ -11,6 +11,8 @@ class TradePositionAggregation:
     net_position: float
     trade_count: int
     total_cost: float
+    average_price: float
+
 
 @dataclass(frozen=True, slots=True)
 class DeltaExposure:
@@ -47,6 +49,11 @@ def aggregate_trades(trade_list: list[Trade])->pd.DataFrame:
         trade_count=('signed_qty', 'count'),
         total_cost=('cost', 'sum')
     ).reset_index()
+    
+    aggregated_trades['avg_price'] = (
+        aggregated_trades['total_cost'] / aggregated_trades['net_position']
+    ).replace([float('inf'), -float('inf')], None)
+
     return aggregated_trades
 
 
@@ -63,7 +70,8 @@ def position_aggregations(trade_list: list[Trade])->list[TradePositionAggregatio
                 delivery_period=row.delivery_period,
                 net_position=row.net_position,
                 trade_count=row.trade_count,
-                total_cost=row.total_cost
+                total_cost=row.total_cost,
+                average_price=row.avg_price
             )
         )
     return position_aggregations
@@ -110,7 +118,7 @@ def print_position_aggregations(aggregated_trades: list[TradePositionAggregation
     print(header)
     print('-' * len(header))
     for t in aggregated_trades:
-        print(f"{t.book:<15} {t.commodity:<15} {t.delivery_period:<20} {t.net_position:>15.2f} {t.trade_count:>12} {t.total_cost:>15.2f}") 
+        print(f"{t.book:<15} {t.commodity:<15} {t.delivery_period:<20} {t.net_position:>15.2f} {t.trade_count:>12} {t.total_cost:>15.2f} {t.average_price:>15.2f}") 
     
 
 def print_delta_exposures(deltas: list[DeltaExposure]):
@@ -140,9 +148,9 @@ if __name__ == '__main__':
     deltas = delta_exposure(trade_list)
     hedge_coverages = hedge_coverage(trade_list)
 
-    print_delta_exposures(deltas)
+    #print_delta_exposures(deltas)
 
-    print_hedge_coverages(hedge_coverages)
+    #print_hedge_coverages(hedge_coverages)
 
     print_position_aggregations(aggregated_trades)
     
