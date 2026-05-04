@@ -119,7 +119,7 @@ def print_position_aggregations(aggregated_trades: list[TradePositionAggregation
     print(header)
     print('-' * len(header))
     for t in aggregated_trades:
-        print(f"{t.book:<15} {t.commodity:<15} {t.delivery_period:<20} {t.net_position:>15.2f} {t.trade_count:>12} {t.total_cost:>15.2f} {t.average_price:>15.2f}") 
+        print(f"{t.book:<15} {t.commodity:<15} {t.delivery_period:<20} {t.net_position:>15.2f} {t.trade_count:>12} {t.total_cost:>15.2f}") 
     
 
 def print_delta_exposures(deltas: list[DeltaExposure]):
@@ -155,17 +155,18 @@ def print_p_and_l(aggregated_trades:list[TradePositionAggregation],
 if __name__ == '__main__':
     trade_list = load_trades_from_json(r'trades.json')
     aggregated_trades = position_aggregations(trade_list)
-    csv_prices = CsvPriceProvider(r'dummy_price.csv')
-    static_prices = StaticPriceProvider ({
-                                    ("nbp_gas", "2026-01") : 27.00 ,
-                                    ("nbp_gas", "2026-02") : 26.00 ,
-                                    })
-    print_p_and_l(aggregated_trades, static_prices)
+    #print_position_aggregations(aggregated_trades)
+    # csv_prices = CsvPriceProvider(r'dummy_price.csv')
+    # static_prices = StaticPriceProvider ({
+    #                                 ("nbp_gas", "2026-01") : 27.00 ,
+    #                                 ("nbp_gas", "2026-02") : 26.00 ,
+    #                                 })
+    # print_p_and_l(aggregated_trades, static_prices)
     
-    # deltas = delta_exposure(trade_list)
-    # hedge_coverages = hedge_coverage(trade_list)
+    deltas = delta_exposure(trade_list)
+    #hedge_coverages = hedge_coverage(trade_list)
 
-    #print_delta_exposures(deltas)
+    print_delta_exposures(deltas)
 
     #print_hedge_coverages(hedge_coverages)
 
