@@ -16,7 +16,6 @@ class StaticPriceProvider:
     def get_price(self, commodity: str, delivery_period: str) -> float:
         return self._prices[(commodity , delivery_period)]
 
-
         
 class CsvPriceProvider:
     """ Prices from CSV file. """

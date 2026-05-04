@@ -2,6 +2,7 @@ from load_trades import load_trades_from_json, TradeCommodityType, TradeBook, Tr
 import pandas as pd
 from dataclasses import dataclass
 import numpy as np
+from price_providers import PriceProvider, StaticPriceProvider, CsvPriceProvider
 
 @dataclass(frozen=True, slots=True)
 class TradePositionAggregation:
@@ -137,22 +138,38 @@ def print_hedge_coverages(hedge_coverages: list[HedgeCoverage]):
     print('-' * len(header))
     for h in hedge_coverages:
         print(f"{h.commodity:<15} {h.delivery_period:<20} {h.hedge_coverage:>15.2f}")
-    
 
+def print_p_and_l(aggregated_trades:list[TradePositionAggregation],
+                  price_provider:PriceProvider):
+    print('\n')
+    header = f"{'Book':<15} {'Commodity':<15} {'Delivery Period':<20} {'Net Position':>15} {'Avg. Price':>15} {'Mkt. Price':>15} {'Unrealised PnL':>15}"
+    print(header)
+    print('-' * len(header))
     
-
+    for t in aggregated_trades:
+        market_price = price_provider.get_price(t.commodity, t.delivery_period) 
+        mtm_pl = (market_price-t.average_price)*t.net_position
+        print(f"{t.book:<15} {t.commodity:<15} {t.delivery_period:<20} {t.net_position:>15.2f} {t.average_price:>15.2f} {market_price:>15.2f} {mtm_pl:>15.2f}")
+    
 
 if __name__ == '__main__':
     trade_list = load_trades_from_json(r'trades.json')
     aggregated_trades = position_aggregations(trade_list)
-    deltas = delta_exposure(trade_list)
-    hedge_coverages = hedge_coverage(trade_list)
+    csv_prices = CsvPriceProvider(r'dummy_price.csv')
+    static_prices = StaticPriceProvider ({
+                                    ("nbp_gas", "2026-01") : 27.00 ,
+                                    ("nbp_gas", "2026-02") : 26.00 ,
+                                    })
+    print_p_and_l(aggregated_trades, static_prices)
+    
+    # deltas = delta_exposure(trade_list)
+    # hedge_coverages = hedge_coverage(trade_list)
 
     #print_delta_exposures(deltas)
 
     #print_hedge_coverages(hedge_coverages)
 
-    print_position_aggregations(aggregated_trades)
+    #print_position_aggregations(aggregated_trades)
     
 
 
