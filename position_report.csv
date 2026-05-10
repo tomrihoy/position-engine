@@ -1,5 +1,0 @@
-Book,Commodity,Delivery Period,Net Position,Trade Count,Total Cost,Avg Price
-hedge,nbp_gas,2026-01,-150.0,1,-3825.0,25.5
-hedge,nbp_gas,2026-02,-60.0,1,-1470.0,24.5
-physical,nbp_gas,2026-01,200.0,2,4700.0,23.5
-physical,nbp_gas,2026-02,80.0,2,1600.0,20.0
