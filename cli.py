@@ -15,33 +15,57 @@ class PriceSource(StrEnum):
     CSV='csv'
     STATIC='static'
 
+class OutputFormat(StrEnum):
+    CSV='csv'
+    TERMINAL='terminal'
+
 app = typer.Typer()
 console=Console()
 
+def position_aggregations_to_df(aggregated_trades):
+    return pd.DataFrame([
+        {
+            "Book": p.book,
+            "Commodity": p.commodity,
+            "Delivery Period": p.delivery_period,
+            "Net Position": p.net_position,
+            "Trade Count": p.trade_count,
+            "Total Cost": p.total_cost,
+            "Avg Price": p.average_price,
+        }
+        for p in aggregated_trades
+    ])
 
 
 @app.command()
 def show_position_aggregations(
-    path: str = typer.Argument(..., help='Path to trade file')
+    path: str = typer.Argument(..., help='Path to trade file'),
+    output_format: OutputFormat = typer.Option('terminal', help ='Report output format')
 ):
     trade_list = load_trades_from_json(path)
     aggregated_trades = position_aggregations(trade_list)
-    table=Table(title='Position Aggregations')
-    table.add_column("Book", style='cyan')
-    table.add_column("Commodity", style='cyan')
-    table.add_column("Delivery Period", style='cyan')
-    table.add_column("Net Position", style='cyan')
+    df = position_aggregations_to_df(aggregated_trades)
 
-    for pos in aggregated_trades:
-        style = 'green' if pos.net_position > 0 else "red"
-        table.add_row(
-            pos.book,
-            pos.commodity,
-            pos.delivery_period,
-            f"{pos.net_position:+,.0f} MWh",
-            style=style,
-        )
-    console.print(table)
+    if output_format == OutputFormat.CSV:
+        df.to_csv("report.csv", index=False)
+    else:
+        table = Table(title='Position Aggregations')
+        table.add_column("Book", style='cyan')
+        table.add_column("Commodity", style='cyan')
+        table.add_column("Delivery Period", style='cyan')
+        table.add_column("Net Position", style='cyan')
+
+        for _, row in df.iterrows():
+            style = 'green' if row["Net Position"] > 0 else "red"
+            table.add_row(
+                str(row["Book"]),
+                str(row["Commodity"]),
+                str(row["Delivery Period"]),
+                f"{row['Net Position']:+,.0f} MWh",
+                style=style,
+            )
+
+        console.print(table)
 
 @app.command()
 def show_hedge_coverages(
