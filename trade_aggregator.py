@@ -77,7 +77,7 @@ def position_aggregations(trade_list: list[Trade])->list[TradePositionAggregatio
         )
     return position_aggregations
 
-def delta_exposure(trade_list: list[Trade])->pd.DataFrame:
+def delta_exposure(trade_list: list[Trade])->list[DeltaExposure]:
     aggregated_trades = aggregate_trades(trade_list)
     delta_df = aggregated_trades.pivot_table( index=["commodity", "delivery_period"], columns="book",
     values="net_position",
@@ -95,7 +95,7 @@ def delta_exposure(trade_list: list[Trade])->pd.DataFrame:
         )
     return delta_exposures
     
-def hedge_coverage(trade_list:list[Trade])->pd.DataFrame:
+def hedge_coverage(trade_list:list[Trade])->list[HedgeCoverage]:
     aggregated_trades = aggregate_trades(trade_list)
     hedge_coverage_df = aggregated_trades.pivot_table( index=["commodity", "delivery_period"], columns="book",
     values="net_position",

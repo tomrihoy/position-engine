@@ -22,8 +22,19 @@ class OutputFormat(StrEnum):
 app = typer.Typer()
 console=Console()
 
-def position_aggregations_to_df(aggregated_trades):
-    return pd.DataFrame([
+@app.command()
+def show_position_aggregations(
+    path: str = typer.Argument(..., help="Path to trade file"),
+    output_format: OutputFormat = typer.Option(
+        OutputFormat.TERMINAL,
+        help="Report output format"
+    )
+):
+    trade_list = load_trades_from_json(path)
+    aggregated_trades = position_aggregations(trade_list)
+
+    # Build DataFrame directly
+    df = pd.DataFrame([
         {
             "Book": p.book,
             "Commodity": p.commodity,
@@ -36,92 +47,142 @@ def position_aggregations_to_df(aggregated_trades):
         for p in aggregated_trades
     ])
 
-
-@app.command()
-def show_position_aggregations(
-    path: str = typer.Argument(..., help='Path to trade file'),
-    output_format: OutputFormat = typer.Option('terminal', help ='Report output format')
-):
-    trade_list = load_trades_from_json(path)
-    aggregated_trades = position_aggregations(trade_list)
-    df = position_aggregations_to_df(aggregated_trades)
-
+    # CSV output
     if output_format == OutputFormat.CSV:
-        df.to_csv("report.csv", index=False)
-    else:
-        table = Table(title='Position Aggregations')
-        table.add_column("Book", style='cyan')
-        table.add_column("Commodity", style='cyan')
-        table.add_column("Delivery Period", style='cyan')
-        table.add_column("Net Position", style='cyan')
+        df.to_csv("position_report.csv", index=False)
+        console.print("[green]Saved position_report.csv[/green]")
+        return
 
-        for _, row in df.iterrows():
-            style = 'green' if row["Net Position"] > 0 else "red"
-            table.add_row(
-                str(row["Book"]),
-                str(row["Commodity"]),
-                str(row["Delivery Period"]),
-                f"{row['Net Position']:+,.0f} MWh",
-                style=style,
-            )
+    # Terminal output
+    table = Table(title="Position Report")
 
-        console.print(table)
+    table.add_column("Book", style="cyan")
+    table.add_column("Commodity", style="cyan")
+    table.add_column("Delivery Period", style="cyan")
+    table.add_column("Net Position", justify="right")
+    table.add_column("Trade Count", justify="right")
+    table.add_column("Total Cost", justify="right")
+    table.add_column("Avg Price", justify="right")
 
-@app.command()
-def show_hedge_coverages(
-    path: str = typer.Argument(..., help='Path to trade file'),
-):
-    trade_list = load_trades_from_json(path)
-    hedge_coverages = hedge_coverage(trade_list)
-    
-    table=Table(title='Hedge Coveraages')
-    table.add_column("Commodity", style='cyan')
-    table.add_column("Delivery Period", style='cyan')
-    table.add_column("Hedge Coverage", style='cyan')
+    for _, row in df.iterrows():
 
-    for hc in hedge_coverages:
+        style = "green" if row["Net Position"] > 0 else "red"
+
         table.add_row(
-            hc.commodity,
-            hc.delivery_period,
-            f"{hc.hedge_coverage:.0f}%",
-        )
-    console.print(table)
-
-@app.command()
-def show_delta_exposures(
-    path: str = typer.Argument(..., help='Path to trade file')
-):
-    trade_list = load_trades_from_json(path)
-    deltas = delta_exposure(trade_list)
-    table=Table(title='Position Aggregations')
-    table.add_column("Commodity", style='cyan')
-    table.add_column("Delivery Period", style='cyan')
-    table.add_column("Delta Exposure", style='cyan')
-
-    for d in deltas:
-        style = 'green' if d.delta_exposure > 0 else "red"
-        table.add_row(
-            d.commodity,
-            d.delivery_period,
-            f"{d.delta_exposure:+,.0f} MWh",
+            str(row["Book"]),
+            str(row["Commodity"]),
+            str(row["Delivery Period"]),
+            f"{row['Net Position']:+,.0f} MWh",
+            f"{row['Trade Count']}",
+            f"£{row['Total Cost']:,.2f}",
+            f"£{row['Avg Price']:,.2f}/MWh",
             style=style,
         )
+
     console.print(table)
 
+@app.command()
+def show_risk_report(
+    path: str = typer.Argument(..., help="Path to trade file"),
+    output_format: OutputFormat = typer.Option(
+        OutputFormat.TERMINAL,
+        help="Report output format"
+    )
+):
+    trade_list = load_trades_from_json(path)
+
+    # Get outputs
+    deltas = delta_exposure(trade_list)
+    hedge_coverages = hedge_coverage(trade_list)
+
+    # Convert to DataFrames
+    delta_df = pd.DataFrame([
+        {
+            "Commodity": d.commodity,
+            "Delivery Period": d.delivery_period,
+            "Delta Exposure": d.delta_exposure,
+        }
+        for d in deltas
+    ])
+
+    hedge_df = pd.DataFrame([
+        {
+            "Commodity": h.commodity,
+            "Delivery Period": h.delivery_period,
+            "Hedge Coverage": h.hedge_coverage,
+        }
+        for h in hedge_coverages
+    ])
+
+    # Merge reports
+    report_df = pd.merge(
+        delta_df,
+        hedge_df,
+        on=["Commodity", "Delivery Period"],
+        how="outer"
+    )
+
+    # CSV output
+    if output_format == OutputFormat.CSV:
+        report_df.to_csv("risk_report.csv", index=False)
+        console.print("[green]Saved risk_report.csv[/green]")
+        return
+
+    # Terminal output
+    table = Table(title="Risk Report")
+
+    table.add_column("Commodity", style="cyan")
+    table.add_column("Delivery Period", style="cyan")
+    table.add_column("Delta Exposure", justify="right")
+    table.add_column("Hedge Coverage", justify="right")
+
+    for _, row in report_df.iterrows():
+
+        delta = row["Delta Exposure"]
+        hedge = row["Hedge Coverage"]
+
+        style = "green" if delta > 0 else "red"
+
+        table.add_row(
+            str(row["Commodity"]),
+            str(row["Delivery Period"]),
+            f"{delta:+,.0f} MWh",
+            f"{hedge:.0f}%",
+            style=style,
+        )
+
+    console.print(table)
 
 @app.command()
 def show_p_and_l(
-    trade_path: str = typer.Argument(..., help='Path to trade file'),
-    price_source: PriceSource = typer.Argument(..., help='Source for market prices'),
-    price_path: str| None = typer.Option(None, help="Path to market price file"),
-    static_prices: str| None = typer.Option(None, 
-                                            help='Feed static prices, format: \'{"commodity|delivery_period": price, ...}\'')
+    trade_path: str = typer.Argument(..., help="Path to trade file"),
+    price_source: PriceSource = typer.Option(
+        ...,
+        help="Source for market prices"
+    ),
+    price_path: str | None = typer.Option(
+        None,
+        help="Path to market price file"
+    ),
+    static_prices: str | None = typer.Option(
+        None,
+        help='Static prices as JSON: \'{"commodity|delivery_period": price}\''
+    ),
+    output_format: OutputFormat = typer.Option(
+        OutputFormat.TERMINAL,
+        help="Report output format"
+    )
 ):
     trade_list = load_trades_from_json(trade_path)
     aggregated_trades = position_aggregations(trade_list)
-    
-    if price_source == "static":
-        import json
+
+    # Build price provider
+    if price_source == PriceSource.STATIC:
+
+        if not static_prices:
+            raise typer.BadParameter(
+                "Provide --static-prices for static price source"
+            )
 
         price_dict = {
             tuple(k.split("|")): v
@@ -130,32 +191,69 @@ def show_p_and_l(
 
         price_provider = StaticPriceProvider(price_dict)
 
-    if price_source == "csv":
-        price_provider = CsvPriceProvider(price_path)
-    
-    table = Table(title= 'PnL')
-    table.add_column("Book")
-    table.add_column("Commodity")
-    table.add_column("Delivery Period")
-    table.add_column("Net Position")
-    table.add_column("Average Price")
-    table.add_column("Market Price")
-    table.add_column("MtM PnL")
+    elif price_source == PriceSource.CSV:
 
-    for pos in aggregated_trades:
-        market_price = price_provider.get_price(pos.commodity, pos.delivery_period)
-        mtm_pnl = (market_price-pos.average_price)*pos.net_position
-        style = "green" if mtm_pnl > 0 else "red"
+        if not price_path:
+            raise typer.BadParameter(
+                "Provide --price-path for csv price source"
+            )
+
+        price_provider = CsvPriceProvider(price_path)
+
+    # Build DataFrame
+    df = pd.DataFrame([
+        {
+            "Book": pos.book,
+            "Commodity": pos.commodity,
+            "Delivery Period": pos.delivery_period,
+            "Net Position": pos.net_position,
+            "Average Price": pos.average_price,
+            "Market Price": price_provider.get_price(
+                str(pos.commodity),
+                pos.delivery_period
+            ),
+        }
+        for pos in aggregated_trades
+    ])
+
+    # Calculate PnL
+    df["MtM PnL"] = (
+        (df["Market Price"] - df["Average Price"])
+        * df["Net Position"]
+    )
+
+    # CSV output
+    if output_format == OutputFormat.CSV:
+        df.to_csv("pnl_report.csv", index=False)
+        console.print("[green]Saved pnl_report.csv[/green]")
+        return
+
+    # Terminal output
+    table = Table(title="PnL Report")
+
+    table.add_column("Book", style="cyan")
+    table.add_column("Commodity", style="cyan")
+    table.add_column("Delivery Period", style="cyan")
+    table.add_column("Net Position", justify="right")
+    table.add_column("Average Price", justify="right")
+    table.add_column("Market Price", justify="right")
+    table.add_column("MtM PnL", justify="right")
+
+    for _, row in df.iterrows():
+
+        style = "green" if row["MtM PnL"] > 0 else "red"
+
         table.add_row(
-            pos.book,
-            pos.commodity,
-            pos.delivery_period,
-            f"{pos.net_position:+,.0f} MWh",
-            f"£{pos.average_price:+,.2f}/MWh",
-            f"£{market_price:+,.2f}/MWh",
-            f"£{mtm_pnl:+,.2f}",
+            str(row["Book"]),
+            str(row["Commodity"]),
+            str(row["Delivery Period"]),
+            f"{row['Net Position']:+,.0f} MWh",
+            f"£{row['Average Price']:,.2f}/MWh",
+            f"£{row['Market Price']:,.2f}/MWh",
+            f"£{row['MtM PnL']:+,.2f}",
             style=style,
         )
+
     console.print(table)
 
 
