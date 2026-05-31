@@ -45,7 +45,12 @@ def trade_from_dict(data: dict) -> Trade:
 
 def load_trades_from_json(filepath: str | Path) -> list[Trade]:
     with open(filepath) as f:
-        raw = json.load(f)
+        content = f.read().strip()
+    
+    if not content:
+        return []
+    
+    raw = json.loads(content)
     return [trade_from_dict(trade) for trade in raw]
 
 def print_trades(trade_list: list[Trade]):
