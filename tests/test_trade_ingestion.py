@@ -1,6 +1,5 @@
 from load_trades import Trade
 
-# TRADE INGESTION:
 def test_signed_qty_buy():
     trade = Trade(
         trade_id = 'TR-001',
@@ -8,8 +7,8 @@ def test_signed_qty_buy():
         commodity = 'nbp_gas',
         delivery_period='2026-01',
         action = 'buy',
-        quantity_mwh='100',
-        price='80'
+        quantity_mwh=100,
+        price=80
     )
     assert trade.signed_quantity==100
 
@@ -20,9 +19,8 @@ def test_signed_quantity_sell():
         commodity = 'nbp_gas',
         delivery_period='2026-01',
         action = 'sell',
-        quantity_mwh='100',
-        price='80'
+        quantity_mwh=100,
+        price=80
     )
     assert trade.signed_quantity==-100
 
-# TRADE AGGREGATION:
