@@ -1,1 +1,7 @@
 *.csv
+.venv/
+.DS_Store
+price_curve_data/
+__pycache__/
+*.pyc
+*.pyo
