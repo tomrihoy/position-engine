@@ -3,6 +3,7 @@ import pandas as pd
 from dataclasses import dataclass
 import numpy as np
 from price_providers import PriceProvider, StaticPriceProvider, CsvPriceProvider
+import datetime
 
 @dataclass(frozen=True, slots=True)
 class TradePositionAggregation:
@@ -26,6 +27,11 @@ class HedgeCoverage:
     commodity: TradeCommodityType
     delivery_period: str
     hedge_coverage: float
+
+@dataclass(frozen=True)
+class PnLResult:
+    pnl: float
+    timestamp: datetime.datetime | None = None
 
 def trades_to_df(trade_list: list[Trade])->pd.DataFrame:
 
@@ -112,6 +118,17 @@ def hedge_coverage(trade_list:list[Trade])->list[HedgeCoverage]:
                 hedge_coverage=row.hedge_coverage)
         )
     return hedge_coverages
+
+def find_p_n_l(market_price: float,
+    aggregated_trade:TradePositionAggregation,
+    price_provider:PriceProvider,
+    return_timestamp: bool,
+)->float| tuple[float, datetime.datetime]:
+    ''' calculate current PnL on netted trade'''
+    pnl = (price_provider.get_price(aggregated_trade.commodity, aggregated_trade.delivery_period)-aggregated_trade.average_price)*aggregated_trade.net_position
+    if return_timestamp is True:
+        return (pnl,datetime.datetime.now())
+    return pnl
     
 def print_position_aggregations(aggregated_trades: list[TradePositionAggregation]):
     print('\n')
@@ -155,18 +172,18 @@ def print_p_and_l(aggregated_trades:list[TradePositionAggregation],
 if __name__ == '__main__':
     trade_list = load_trades_from_json(r'trades.json')
     aggregated_trades = position_aggregations(trade_list)
-    #print_position_aggregations(aggregated_trades)
+    print_position_aggregations(aggregated_trades)
     # csv_prices = CsvPriceProvider(r'dummy_price.csv')
-    # static_prices = StaticPriceProvider ({
-    #                                 ("nbp_gas", "2026-01") : 27.00 ,
-    #                                 ("nbp_gas", "2026-02") : 26.00 ,
-    #                                 })
-    # print_p_and_l(aggregated_trades, static_prices)
+    static_prices = StaticPriceProvider ({
+                                    ("nbp_gas", "2026-01") : 27.00 ,
+                                    ("nbp_gas", "2026-02") : 26.00 ,
+                                    })
+    print_p_and_l(aggregated_trades, static_prices)
     
-    deltas = delta_exposure(trade_list)
+    #deltas = delta_exposure(trade_list)
     #hedge_coverages = hedge_coverage(trade_list)
 
-    print_delta_exposures(deltas)
+    #print_delta_exposures(deltas)
 
     #print_hedge_coverages(hedge_coverages)
 
