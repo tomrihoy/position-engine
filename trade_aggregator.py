@@ -65,6 +65,9 @@ def aggregate_trades(trade_list: list[Trade])->pd.DataFrame:
 
 
 def position_aggregations(trade_list: list[Trade])->list[TradePositionAggregation]:
+    
+    if not trade_list:
+        return []
     aggregated_trades = aggregate_trades(trade_list)
     
     position_aggregations=[]
@@ -84,6 +87,9 @@ def position_aggregations(trade_list: list[Trade])->list[TradePositionAggregatio
     return position_aggregations
 
 def delta_exposure(trade_list: list[Trade])->list[DeltaExposure]:
+    if not trade_list:
+        return []
+    
     aggregated_trades = aggregate_trades(trade_list)
     delta_df = aggregated_trades.pivot_table( index=["commodity", "delivery_period"], columns="book",
     values="net_position",
@@ -102,15 +108,17 @@ def delta_exposure(trade_list: list[Trade])->list[DeltaExposure]:
     return delta_exposures
     
 def hedge_coverage(trade_list:list[Trade])->list[HedgeCoverage]:
+    if not trade_list:
+        return []
     aggregated_trades = aggregate_trades(trade_list)
-    hedge_coverage_df = aggregated_trades.pivot_table( index=["commodity", "delivery_period"], columns="book",
+    coverage_df = aggregated_trades.pivot_table( index=["commodity", "delivery_period"], columns="book",
     values="net_position",
     fill_value=0, ).reset_index()
-    hedge_coverage_df["hedge_coverage"] = (
-    100*np.abs(hedge_coverage_df.get("hedge", 0))/np.abs(hedge_coverage_df.get("physical", 0))
+    coverage_df["hedge_coverage"] = (
+    100*np.abs(coverage_df.get("hedge", 0))/np.abs(coverage_df.get("physical", 0))
     )
     hedge_coverages=[]
-    for row in hedge_coverage_df.itertuples():
+    for row in coverage_df.itertuples():
         hedge_coverages.append(
             HedgeCoverage(
                 commodity=row.commodity,
@@ -119,18 +127,20 @@ def hedge_coverage(trade_list:list[Trade])->list[HedgeCoverage]:
         )
     return hedge_coverages
 
-def find_p_n_l(market_price: float,
-    aggregated_trade:TradePositionAggregation,
+def find_p_n_l(aggregated_trade:TradePositionAggregation,
     price_provider:PriceProvider,
-    return_timestamp: bool,
+    return_timestamp: bool = False,
 )->float| tuple[float, datetime.datetime]:
     ''' calculate current PnL on netted trade'''
-    pnl = (price_provider.get_price(aggregated_trade.commodity, aggregated_trade.delivery_period)-aggregated_trade.average_price)*aggregated_trade.net_position
+    if aggregated_trade.net_position == 0 or aggregated_trade.average_price is None:
+        pnl = 0.0
+    else:
+        pnl = (price_provider.get_price(aggregated_trade.commodity, aggregated_trade.delivery_period)-aggregated_trade.average_price)*aggregated_trade.net_position
     if return_timestamp is True:
         return (pnl,datetime.datetime.now())
     return pnl
     
-def print_position_aggregations(aggregated_trades: list[TradePositionAggregation]):
+def print_position_aggregations(aggregated_trades: list[TradePositionAggregation])->None:
     print('\n')
     header = f"{'Book':<15} {'Commodity':<15} {'Delivery Period':<20} {'Net Position':>15} {'Trade Count':>12} {'Total Cost':>15}"
     print(header)
@@ -139,7 +149,7 @@ def print_position_aggregations(aggregated_trades: list[TradePositionAggregation
         print(f"{t.book:<15} {t.commodity:<15} {t.delivery_period:<20} {t.net_position:>15.2f} {t.trade_count:>12} {t.total_cost:>15.2f}") 
     
 
-def print_delta_exposures(deltas: list[DeltaExposure]):
+def print_delta_exposures(deltas: list[DeltaExposure])->None:
     print('\n')
     header = f"{'Commodity':<15} {'Delivery Period':<20} {'Delta Exposure':>15}"
     print(header)
@@ -148,7 +158,7 @@ def print_delta_exposures(deltas: list[DeltaExposure]):
         print(f"{d.commodity:<15} {d.delivery_period:<20} {d.delta_exposure:>15.2f}")
     
 
-def print_hedge_coverages(hedge_coverages: list[HedgeCoverage]):
+def print_hedge_coverages(hedge_coverages: list[HedgeCoverage])->None:
     print('\n')
     header = f"{'Commodity':<15} {'Delivery Period':<20} {'Hedge Coverage':>15}"
     print(header)
@@ -157,7 +167,11 @@ def print_hedge_coverages(hedge_coverages: list[HedgeCoverage]):
         print(f"{h.commodity:<15} {h.delivery_period:<20} {h.hedge_coverage:>15.2f}")
 
 def print_p_and_l(aggregated_trades:list[TradePositionAggregation],
-                  price_provider:PriceProvider):
+                  price_provider:PriceProvider)->None:
+    if not aggregated_trades:
+        print("No positions to display.")
+        return
+    
     print('\n')
     header = f"{'Book':<15} {'Commodity':<15} {'Delivery Period':<20} {'Net Position':>15} {'Avg. Price':>15} {'Mkt. Price':>15} {'Unrealised PnL':>15}"
     print(header)
@@ -170,24 +184,30 @@ def print_p_and_l(aggregated_trades:list[TradePositionAggregation],
     
 
 if __name__ == '__main__':
-    trade_list = load_trades_from_json(r'trades.json')
+    trade_list = load_trades_from_json(r'tests/data/empty_trades.json')
     aggregated_trades = position_aggregations(trade_list)
-    print_position_aggregations(aggregated_trades)
+    # print_position_aggregations(aggregated_trades)
     # csv_prices = CsvPriceProvider(r'dummy_price.csv')
     static_prices = StaticPriceProvider ({
                                     ("nbp_gas", "2026-01") : 27.00 ,
                                     ("nbp_gas", "2026-02") : 26.00 ,
                                     })
     print_p_and_l(aggregated_trades, static_prices)
-    
-    #deltas = delta_exposure(trade_list)
-    #hedge_coverages = hedge_coverage(trade_list)
+    # sp = StaticPriceProvider({
+    #     ("nbp_gas", "2026-01"): 27.00,
+    #     ("nbp_gas", "2026-02"): 26.00,
+    # })
+    #sp.get_price('nbp_gas', '2026-03')
+    # trade_list = load_trades_from_json(r'/Users/tomrihoy/Desktop/ETRM Course/position-engine/tests/data/empty_trades.json')
+    # aggregated_trades = position_aggregations(trade_list)
+    # deltas = delta_exposure(trade_list)
+    # hedge_coverages = hedge_coverage(trade_list)
 
-    #print_delta_exposures(deltas)
+    # print_delta_exposures(deltas)
 
-    #print_hedge_coverages(hedge_coverages)
+    # print_hedge_coverages(hedge_coverages)
 
-    #print_position_aggregations(aggregated_trades)
+    # print_position_aggregations(aggregated_trades)
     
 
 
