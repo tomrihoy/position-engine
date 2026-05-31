@@ -35,3 +35,8 @@ select = [
     "N",    # pep8-naming — naming conventions (classes, functions, variables)
 ]
 
+[tool.ruff.lint.per-file-ignores]
+"cli.py" = ["B008"]   
+
+[tool.pytest.ini_options]
+pythonpath = ["."]

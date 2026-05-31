@@ -5,16 +5,19 @@ from pathlib import Path
 
 
 class TradeCommodityType(StrEnum):
-    NBP_GAS = 'nbp_gas'
-    TTF_GAS = 'ttf_gas'
+    NBP_GAS = "nbp_gas"
+    TTF_GAS = "ttf_gas"
+
 
 class TradeBook(StrEnum):
-    PHYSICAL = 'physical'
-    HEDGE='hedge'
+    PHYSICAL = "physical"
+    HEDGE = "hedge"
+
 
 class TradeAction(StrEnum):
-    BUY='buy'
-    SELL='sell'
+    BUY = "buy"
+    SELL = "sell"
+
 
 @dataclass(frozen=True, slots=True)
 class Trade:
@@ -27,10 +30,11 @@ class Trade:
     price: float
 
     @property
-    def signed_quantity(self)->float:
-        if self.action==TradeAction.BUY:
+    def signed_quantity(self) -> float:
+        if self.action == TradeAction.BUY:
             return self.quantity_mwh
         return -self.quantity_mwh
+
 
 def trade_from_dict(data: dict) -> Trade:
     return Trade(
@@ -43,28 +47,34 @@ def trade_from_dict(data: dict) -> Trade:
         price=float(data["price"]),
     )
 
+
 def load_trades_from_json(filepath: str | Path) -> list[Trade]:
     with open(filepath) as f:
-        raw = json.load(f)
+        content = f.read().strip()
+
+    if not content:
+        return []
+
+    raw = json.loads(content)
     return [trade_from_dict(trade) for trade in raw]
+
 
 def print_trades(trade_list: list[Trade]):
     for trade in trade_list:
-        print('---------------------\n'
-        f'Trade ID: {trade.trade_id}\n'
-        f'Book: {trade.book}\n'
-        f'Commodity type: {trade.commodity}\n'
-        f'Delivery period: {trade.delivery_period}\n'
-        f'Action: {trade.action}\n'
-        f'Quantity (MWh): {trade.quantity_mwh}\n'
-        f'Price: {trade.price}\n'
-        f'Signed qty: {trade.signed_quantity}\n'
-        '---------------------\n'
+        print(
+            "---------------------\n"
+            f"Trade ID: {trade.trade_id}\n"
+            f"Book: {trade.book}\n"
+            f"Commodity type: {trade.commodity}\n"
+            f"Delivery period: {trade.delivery_period}\n"
+            f"Action: {trade.action}\n"
+            f"Quantity (MWh): {trade.quantity_mwh}\n"
+            f"Price: {trade.price}\n"
+            f"Signed qty: {trade.signed_quantity}\n"
+            "---------------------\n"
         )
 
 
-if __name__=='__main__':
-    trades = load_trades_from_json('trades.json')
+if __name__ == "__main__":
+    trades = load_trades_from_json("trades.json")
     print_trades(trades)
-
-

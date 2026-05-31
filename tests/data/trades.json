@@ -1,0 +1,27 @@
+[
+{
+"trade_id": "TR-001",
+"book": "physical", "commodity": "nbp_gas", "delivery_period": "2026-01",
+"action": "buy", "quantity_mwh": 500, "price": 25.00
+}, {
+"trade_id": "TR-002",
+"book": "physical", "commodity": "nbp_gas",
+"delivery_period": "2026-01", "action": "sell", "quantity_mwh": 300,
+"price": 26.00 },
+{
+"trade_id": "TR-003", "book": "hedge",
+"commodity": "nbp_gas", "delivery_period": "2026-01",
+"action": "sell", "quantity_mwh": 150, "price": 25.50
+}, {
+"trade_id": "TR-004",
+"book": "physical", "commodity": "nbp_gas", "delivery_period": "2026-02",
+"action": "buy", "quantity_mwh": 400, "price": 24.00
+}, {
+"trade_id": "TR-005", "book": "physical", "commodity": "nbp_gas",
+"delivery_period": "2026-02", "action": "sell", "quantity_mwh": 320,
+"price": 25.00 },
+{
+"trade_id": "TR-006", "book": "hedge", "commodity": "nbp_gas",
+"delivery_period": "2026-02", "action": "sell", "quantity_mwh": 60,
+"price": 24.50 }
+]
